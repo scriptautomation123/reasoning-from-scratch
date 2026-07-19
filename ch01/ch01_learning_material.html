@@ -1,0 +1,2206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chapter 1 — Understanding Reasoning Models | Build a Reasoning Model From Scratch</title>
+
+  <!-- MathJax for LaTeX rendering -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['$$', '$$']],
+        tags: 'ams'
+      },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    /* ─────────────────────────────────────────────
+       RESET & BASE
+    ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:         #1a1a2e;
+      --ink-soft:    #3d3d5c;
+      --ink-muted:   #6b6b8d;
+      --bg:          #fafaf8;
+      --bg-alt:      #f0ede6;
+      --accent:      #2d6a9f;
+      --accent-dark: #1a4b73;
+      --accent-light:#e8f2fb;
+      --warning-bg:  #fff8e6;
+      --warning-bd:  #e6a817;
+      --code-bg:     #1e1e2e;
+      --code-fg:     #cdd6f4;
+      --java-bg:     #1e2e1e;
+      --java-fg:     #b8e4b8;
+      --green:       #2e7d32;
+      --red:         #b71c1c;
+      --serif:       'Georgia', 'Times New Roman', serif;
+      --sans:        'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      --mono:        'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      --max-width:   860px;
+      --gutter:      2.5rem;
+    }
+
+    html { font-size: 17px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--serif);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.8;
+    }
+
+    /* ─────────────────────────────────────────────
+       LAYOUT
+    ───────────────────────────────────────────── */
+    .page-wrap {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      background: var(--ink);
+      color: #e0e0f0;
+      padding: 2rem 1.4rem;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+    }
+
+    .sidebar-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .sidebar nav ul { list-style: none; }
+    .sidebar nav li { margin: 0.15rem 0; }
+    .sidebar nav a {
+      display: block;
+      color: #c8c8e8;
+      text-decoration: none;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+      line-height: 1.4;
+    }
+    .sidebar nav a:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .sidebar nav li.section-head > a {
+      color: var(--accent-light);
+      font-weight: 600;
+      margin-top: 0.9rem;
+    }
+    .sidebar nav li.subsection > a { padding-left: 1.2rem; font-size: 0.78rem; color: #a0a0c0; }
+
+    /* MAIN */
+    .main-content {
+      padding: var(--gutter) calc(var(--gutter) * 1.4);
+      max-width: calc(var(--max-width) + var(--gutter) * 2.8);
+    }
+
+    /* ─────────────────────────────────────────────
+       HEADER / TITLE PAGE
+    ───────────────────────────────────────────── */
+    .chapter-header {
+      text-align: center;
+      padding: 4rem 2rem 3.5rem;
+      border-bottom: 2px solid var(--bg-alt);
+      margin-bottom: 3.5rem;
+    }
+
+    .chapter-eyebrow {
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    .chapter-title {
+      font-family: var(--serif);
+      font-size: 2.4rem;
+      line-height: 1.25;
+      color: var(--ink);
+      margin-bottom: 0.6rem;
+    }
+
+    .chapter-subtitle {
+      font-family: var(--sans);
+      font-size: 1.05rem;
+      color: var(--ink-soft);
+      margin-bottom: 2rem;
+    }
+
+    .chapter-meta {
+      display: inline-flex;
+      gap: 1.6rem;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      color: var(--ink-muted);
+      border-top: 1px solid var(--bg-alt);
+      padding-top: 1rem;
+    }
+
+    /* ─────────────────────────────────────────────
+       LEARNING OBJECTIVES BOX
+    ───────────────────────────────────────────── */
+    .objectives {
+      background: var(--accent-light);
+      border-left: 5px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 1.5rem 1.8rem;
+      margin-bottom: 3rem;
+    }
+    .objectives h3 {
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      margin-bottom: 0.8rem;
+    }
+    .objectives ul {
+      list-style: none;
+      padding: 0;
+    }
+    .objectives ul li {
+      padding: 0.25rem 0 0.25rem 1.4rem;
+      position: relative;
+      font-family: var(--sans);
+      font-size: 0.93rem;
+      color: var(--ink);
+    }
+    .objectives ul li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ─────────────────────────────────────────────
+       SECTION HEADINGS
+    ───────────────────────────────────────────── */
+    .section {
+      margin-bottom: 4rem;
+    }
+
+    h2.section-title {
+      font-family: var(--serif);
+      font-size: 1.75rem;
+      color: var(--ink);
+      margin-bottom: 0.3rem;
+      padding-top: 0.5rem;
+      border-top: 3px solid var(--accent);
+      padding-top: 1rem;
+    }
+
+    h2.section-title .section-num {
+      color: var(--accent);
+      margin-right: 0.4rem;
+    }
+
+    h3.subsection-title {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      color: var(--ink);
+      margin: 2rem 0 0.7rem;
+    }
+
+    h4.micro-title {
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--ink-soft);
+      margin: 1.5rem 0 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    p { margin-bottom: 1.1rem; }
+
+    /* ─────────────────────────────────────────────
+       CALLOUT BOXES
+    ───────────────────────────────────────────── */
+    .callout {
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin: 1.8rem 0;
+      font-family: var(--sans);
+      font-size: 0.92rem;
+      line-height: 1.65;
+    }
+    .callout strong.callout-label {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .callout.note {
+      background: #edf7ff;
+      border-left: 5px solid #1976d2;
+    }
+    .callout.note strong.callout-label { color: #1565c0; }
+
+    .callout.tip {
+      background: #f1f8f1;
+      border-left: 5px solid var(--green);
+    }
+    .callout.tip strong.callout-label { color: var(--green); }
+
+    .callout.warning {
+      background: var(--warning-bg);
+      border-left: 5px solid var(--warning-bd);
+    }
+    .callout.warning strong.callout-label { color: #b36a00; }
+
+    .callout.java-note {
+      background: #f0f8f0;
+      border-left: 5px solid #388e3c;
+    }
+    .callout.java-note strong.callout-label { color: #2e7d32; }
+
+    .callout.definition {
+      background: #fdf4ff;
+      border-left: 5px solid #9c27b0;
+    }
+    .callout.definition strong.callout-label { color: #6a1b9a; }
+
+    /* ─────────────────────────────────────────────
+       MATH DISPLAY
+    ───────────────────────────────────────────── */
+    .math-block {
+      background: #f8f4ff;
+      border: 1px solid #d8ccf0;
+      border-radius: 8px;
+      padding: 1.4rem 2rem;
+      margin: 1.6rem 0;
+      overflow-x: auto;
+      text-align: center;
+    }
+    .math-caption {
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      color: var(--ink-muted);
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+
+    /* ─────────────────────────────────────────────
+       CODE BLOCKS
+    ───────────────────────────────────────────── */
+    .code-container {
+      margin: 1.8rem 0;
+    }
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #2a2a3e;
+      padding: 0.5rem 1rem;
+      border-radius: 8px 8px 0 0;
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      color: #a8a8c8;
+    }
+    .code-header .lang-badge {
+      background: rgba(255,255,255,0.1);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .code-header .lang-badge.python { color: #4ec9b0; }
+    .code-header .lang-badge.java   { color: #9cdcfe; }
+    .code-header .lang-badge.pseudo { color: #dcdcaa; }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-fg);
+      font-family: var(--mono);
+      font-size: 0.87rem;
+      line-height: 1.65;
+      padding: 1.2rem 1.4rem;
+      border-radius: 0 0 8px 8px;
+      overflow-x: auto;
+    }
+    pre.java-code { background: var(--java-bg); color: var(--java-fg); }
+
+    code.inline {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      background: #e8e4f4;
+      color: #4a1080;
+      padding: 0.1em 0.4em;
+      border-radius: 3px;
+    }
+
+    /* ─────────────────────────────────────────────
+       SIDE-BY-SIDE CODE COMPARISON
+    ───────────────────────────────────────────── */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.8rem 0;
+    }
+    .comparison-grid .code-container { margin: 0; }
+    @media (max-width: 700px) {
+      .comparison-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─────────────────────────────────────────────
+       FIGURES & DIAGRAMS
+    ───────────────────────────────────────────── */
+    figure {
+      margin: 2rem 0;
+      text-align: center;
+    }
+    figcaption {
+      font-family: var(--sans);
+      font-size: 0.83rem;
+      color: var(--ink-muted);
+      margin-top: 0.6rem;
+    }
+
+    /* ASCII / SVG diagram containers */
+    .diagram {
+      background: var(--bg-alt);
+      border: 1px solid #d8d4cc;
+      border-radius: 8px;
+      padding: 1.4rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      text-align: left;
+      display: inline-block;
+      min-width: 50%;
+    }
+
+    /* ─────────────────────────────────────────────
+       TABLES
+    ───────────────────────────────────────────── */
+    .data-table-wrap { overflow-x: auto; margin: 1.6rem 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--sans);
+      font-size: 0.9rem;
+    }
+    thead tr { background: var(--ink); color: #fff; }
+    thead th { padding: 0.7rem 1rem; text-align: left; font-weight: 600; }
+    tbody tr:nth-child(even) { background: var(--bg-alt); }
+    tbody td { padding: 0.6rem 1rem; border-bottom: 1px solid #e0dcd4; }
+
+    /* ─────────────────────────────────────────────
+       TIMELINE / STEPS
+    ───────────────────────────────────────────── */
+    .steps {
+      counter-reset: step-counter;
+      list-style: none;
+      padding: 0;
+      margin: 1.5rem 0;
+    }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 1.2rem;
+      margin-bottom: 1.4rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      min-width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 0.9rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .steps li p { margin: 0; font-family: var(--sans); font-size: 0.93rem; }
+
+    /* ─────────────────────────────────────────────
+       KEY TERMS GRID
+    ───────────────────────────────────────────── */
+    .key-terms {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .term-card {
+      background: var(--bg-alt);
+      border-top: 3px solid var(--accent);
+      border-radius: 0 0 8px 8px;
+      padding: 1rem 1.1rem;
+    }
+    .term-card dt {
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--accent-dark);
+      margin-bottom: 0.3rem;
+    }
+    .term-card dd {
+      font-family: var(--sans);
+      font-size: 0.84rem;
+      color: var(--ink-soft);
+      line-height: 1.55;
+    }
+
+    /* ─────────────────────────────────────────────
+       REVIEW QUESTIONS
+    ───────────────────────────────────────────── */
+    .questions ol {
+      padding-left: 1.4rem;
+    }
+    .questions ol li {
+      margin-bottom: 1rem;
+      font-family: var(--sans);
+      font-size: 0.93rem;
+      line-height: 1.65;
+    }
+
+    /* ─────────────────────────────────────────────
+       SUMMARY BOX
+    ───────────────────────────────────────────── */
+    .summary-box {
+      background: linear-gradient(135deg, var(--accent-light) 0%, #f0f4ff 100%);
+      border: 1px solid #b8d0e8;
+      border-radius: 10px;
+      padding: 1.8rem 2rem;
+      margin: 2rem 0;
+    }
+    .summary-box h3 {
+      font-family: var(--sans);
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      margin-bottom: 0.9rem;
+    }
+    .summary-box ul { padding-left: 1.3rem; }
+    .summary-box ul li {
+      font-family: var(--sans);
+      font-size: 0.93rem;
+      margin-bottom: 0.6rem;
+      color: var(--ink);
+    }
+
+    /* ─────────────────────────────────────────────
+       CHAPTER PROGRESS BANNER
+    ───────────────────────────────────────────── */
+    .chapter-map {
+      background: var(--ink);
+      color: #e0e0f0;
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1.8rem 0;
+      font-family: var(--sans);
+      font-size: 0.88rem;
+    }
+    .chapter-map h4 {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+      margin-bottom: 0.8rem;
+    }
+    .chapter-map .cmap-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .chapter-map .cmap-item {
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.78rem;
+    }
+    .chapter-map .cmap-item.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ─────────────────────────────────────────────
+       FOOTER
+    ───────────────────────────────────────────── */
+    footer {
+      border-top: 2px solid var(--bg-alt);
+      padding: 2rem 0;
+      margin-top: 4rem;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      color: var(--ink-muted);
+      text-align: center;
+    }
+
+    /* ─────────────────────────────────────────────
+       UTILITIES
+    ───────────────────────────────────────────── */
+    .text-center { text-align: center; }
+    .mt-sm { margin-top: 0.6rem; }
+    .hr-section {
+      border: none;
+      border-top: 1px solid var(--bg-alt);
+      margin: 3rem 0;
+    }
+
+    /* ─────────────────────────────────────────────
+       RESPONSIVE
+    ───────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .page-wrap { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- ══════════════════════════════════════════
+       SIDEBAR  NAV
+  ══════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Build a Reasoning Model From Scratch</div>
+    <nav aria-label="Chapter navigation">
+      <ul>
+        <li class="section-head"><a href="#ch1-top">Chapter 1</a></li>
+        <li class="subsection"><a href="#objectives">Learning Objectives</a></li>
+        <li class="section-head"><a href="#s1">1.1 The Rise of AI Reasoning</a></li>
+        <li class="subsection"><a href="#s1-1">Why Reasoning Matters</a></li>
+        <li class="subsection"><a href="#s1-2">A Shift in the Field</a></li>
+
+        <li class="section-head"><a href="#s2">1.2 What Is an LLM?</a></li>
+        <li class="subsection"><a href="#s2-tokens">Tokens</a></li>
+        <li class="subsection"><a href="#s2-nn">The Neural Network</a></li>
+        <li class="subsection"><a href="#s2-weights">Weights & Parameters</a></li>
+        <li class="subsection"><a href="#s2-pretrain">Pre-training</a></li>
+
+        <li class="section-head"><a href="#s3">1.3 Text Prediction to Understanding</a></li>
+        <li class="subsection"><a href="#s3-ntp">Next-Token Prediction</a></li>
+        <li class="subsection"><a href="#s3-attention">Attention Mechanism</a></li>
+        <li class="subsection"><a href="#s3-context">Context Window</a></li>
+
+        <li class="section-head"><a href="#s4">1.4 What Makes a Model "Reason"?</a></li>
+        <li class="subsection"><a href="#s4-problem">The Shallow-Answer Problem</a></li>
+        <li class="subsection"><a href="#s4-cot">Chain of Thought</a></li>
+        <li class="subsection"><a href="#s4-ds">The DeepSeek Breakthrough</a></li>
+
+        <li class="section-head"><a href="#s5">1.5 Three Approaches</a></li>
+        <li class="subsection"><a href="#s5-its">Inference-Time Scaling</a></li>
+        <li class="subsection"><a href="#s5-rl">Reinforcement Learning</a></li>
+        <li class="subsection"><a href="#s5-distill">Distillation</a></li>
+
+        <li class="section-head"><a href="#s6">1.6 The Qwen3 Base Model</a></li>
+        <li class="section-head"><a href="#s7">1.7 Book Roadmap</a></li>
+        <li class="section-head"><a href="#s8">1.8 Python for Java Developers</a></li>
+        <li class="subsection"><a href="#s8-syntax">Syntax Comparison</a></li>
+        <li class="subsection"><a href="#s8-types">Types &amp; Collections</a></li>
+        <li class="subsection"><a href="#s8-numpy">NumPy Essentials</a></li>
+
+        <li class="section-head"><a href="#summary">Summary</a></li>
+        <li class="section-head"><a href="#keyterms">Key Terms</a></li>
+        <li class="section-head"><a href="#review">Review Questions</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- ══════════════════════════════════════════
+       MAIN CONTENT
+  ══════════════════════════════════════════ -->
+  <main class="main-content" id="ch1-top">
+
+    <!-- CHAPTER HEADER -->
+    <header class="chapter-header">
+      <div class="chapter-eyebrow">Chapter One</div>
+      <h1 class="chapter-title">Understanding Reasoning Models</h1>
+      <p class="chapter-subtitle">
+        Foundations of large language models, chain-of-thought reasoning,<br>
+        and the techniques that turn text prediction into structured thought.
+      </p>
+      <div class="chapter-meta">
+        <span>📖 ~45 min read</span>
+        <span>💻 No code this chapter</span>
+        <span>🔢 Math: introductory</span>
+      </div>
+    </header>
+
+    <!-- CHAPTER MAP -->
+    <div class="chapter-map">
+      <h4>Where We Are in the Book</h4>
+      <div class="cmap-row">
+        <span class="cmap-item active">Ch 1 · Reasoning Foundations</span>
+        <span class="cmap-item">Ch 2 · Text Generation</span>
+        <span class="cmap-item">Ch 3 · Evaluation</span>
+        <span class="cmap-item">Ch 4 · Inference Scaling</span>
+        <span class="cmap-item">Ch 5 · Self-Refinement</span>
+        <span class="cmap-item">Ch 6 · RL Training</span>
+        <span class="cmap-item">Ch 7 · Advanced GRPO</span>
+        <span class="cmap-item">Ch 8 · Distillation</span>
+      </div>
+    </div>
+
+    <!-- ── LEARNING OBJECTIVES ────────────────── -->
+    <div class="objectives" id="objectives">
+      <h3>Learning Objectives</h3>
+      <ul>
+        <li>Explain what a large language model (LLM) is at a conceptual and mathematical level.</li>
+        <li>Describe how tokens, embeddings, and weights together enable language generation.</li>
+        <li>Articulate what "reasoning" means in the context of AI — and why it is hard.</li>
+        <li>Distinguish between three major techniques for building reasoning models:
+            inference-time scaling, reinforcement learning, and knowledge distillation.</li>
+        <li>Explain the significance of the DeepSeek R1 breakthrough.</li>
+        <li>Identify the Qwen3 model and why this book uses it as a starting point.</li>
+        <li>Read and write elementary Python code if you already know Java.</li>
+      </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTION 1.1
+    ══════════════════════════════════════════ -->
+    <section class="section" id="s1">
+      <h2 class="section-title"><span class="section-num">1.1</span> The Rise of AI Reasoning</h2>
+
+      <p>
+        In 2024 and 2025, something changed in the world of artificial intelligence. Language models had
+        already proven they could answer questions, write essays, summarize documents, and generate code.
+        But they kept making surprisingly elementary mistakes on problems that required more than surface
+        pattern matching — multi-step arithmetic, logical deductions, physics word problems, or anything
+        demanding that the model work through a sequence of decisions before committing to a final answer.
+      </p>
+
+      <p>
+        The capability that closed this gap is called <em>reasoning</em> — the ability of a model to
+        deliberate: to pause, think through intermediate steps, and check its own work before producing
+        an answer. This book is about how reasoning is implemented in practice, and how you can
+        build it yourself.
+      </p>
+
+      <h3 class="subsection-title" id="s1-1">Why Reasoning Matters</h3>
+
+      <p>
+        Consider how an experienced software engineer approaches a complex bug. They do not guess the
+        fix immediately. They reason:
+      </p>
+
+      <ol class="steps">
+        <li><p><strong>Reproduce the problem</strong> — narrow the conditions that cause the failure.</p></li>
+        <li><p><strong>Form a hypothesis</strong> — "the null pointer exception occurs because <em>x</em>."</p></li>
+        <li><p><strong>Test the hypothesis</strong> — add a log statement, run the test.</p></li>
+        <li><p><strong>Revise and repeat</strong> — if wrong, try the next hypothesis.</p></li>
+        <li><p><strong>Apply the fix</strong> — only after reasoning concludes, commit the change.</p></li>
+      </ol>
+
+      <p>
+        Early language models skipped all those intermediate steps. They jumped straight from the
+        problem statement to a proposed answer — like a junior developer who looks at a stack trace for
+        two seconds, types a fix, and pushes to production. A reasoning model, by contrast, produces
+        a <em>chain of thought</em> before the final answer, mirroring the deliberate process above.
+      </p>
+
+      <div class="callout note">
+        <strong class="callout-label">Note</strong>
+        Throughout this book, we use the term <em>reasoning</em> specifically to mean explicit,
+        multi-step, visible deliberation inside the model's output — not reasoning in the broad
+        philosophical sense. When we say a model "reasons," we mean it generates intermediate
+        thinking tokens before its final answer.
+      </div>
+
+      <h3 class="subsection-title" id="s1-2">A Shift in the Field</h3>
+
+      <p>
+        Two developments accelerated interest in reasoning models. First, OpenAI released its
+        <em>o1</em> model in late 2024 — a model that generated long internal "thinking" passages
+        invisible to users but which dramatically improved its accuracy on mathematical and coding
+        benchmarks. Second, DeepSeek released <em>R1</em> in early 2025, an open-weight model
+        that matched or exceeded o1 on many benchmarks and whose training approach was published in
+        detail. For the first time, the research community had a complete blueprint.
+      </p>
+
+      <p>
+        This book follows that blueprint — starting with a pre-trained open-source LLM (Qwen3) and
+        layering reasoning capabilities on top, step by step, in code you can run and inspect on
+        consumer hardware.
+      </p>
+
+      <div class="callout tip">
+        <strong class="callout-label">Tip — "From Scratch" Does Not Mean "From Random Weights"</strong>
+        The phrase "from scratch" in this book's title means we implement every reasoning technique
+        ourselves — we do not use a black-box API. However, we start from a pre-trained base LLM
+        rather than training a neural network from random weights, which would require months of
+        compute on thousands of GPUs.
+      </div>
+    </section>
+
+    <hr class="hr-section" />
+
+    <!-- ══════════════════════════════════════════
+         SECTION 1.2
+    ══════════════════════════════════════════ -->
+    <section class="section" id="s2">
+      <h2 class="section-title"><span class="section-num">1.2</span> What Is a Large Language Model?</h2>
+
+      <p>
+        Before we can understand reasoning, we need to understand language models themselves. This
+        section builds a mental model from the ground up, deliberately connecting each concept to
+        things a Java developer already knows.
+      </p>
+
+      <!-- TOKENS -->
+      <h3 class="subsection-title" id="s2-tokens">1.2.1 Tokens: The Atoms of Language</h3>
+
+      <p>
+        A language model does not read characters. It reads <em>tokens</em> — variable-length
+        chunks of text produced by a tokenizer. You can think of a tokenizer as a specialized
+        <code class="inline">String.split()</code> operation with a very specific, learned vocabulary.
+      </p>
+
+      <p>
+        A typical modern tokenizer (such as the Byte-Pair Encoding algorithm, or BPE) starts from
+        the Unicode byte alphabet and iteratively merges the most frequent adjacent pairs into new
+        tokens. The result is a vocabulary of roughly 32,000–150,000 tokens that covers common
+        English words, sub-word fragments, numbers, punctuation, and code symbols.
+      </p>
+
+      <div class="callout note">
+        <strong class="callout-label">Example</strong>
+        The phrase <em>"Tokenization is useful!"</em> might be split into tokens like:
+        <code class="inline">["Token", "ization", " is", " useful", "!"]</code>.
+        Each token is mapped to an integer index: e.g., <code class="inline">[1842, 2561, 374, 5505, 0]</code>.
+        Those integers are the only inputs the model ever sees.
+      </div>
+
+      <p>
+        Why sub-word tokens instead of whole words or single characters? Whole-word vocabularies
+        explode in size (millions of words exist across languages) and cannot handle unseen words.
+        Character-level models work but produce very long sequences, which are computationally
+        expensive. Sub-word tokenization is a carefully engineered middle ground: rare words are
+        split into familiar pieces, common words are kept intact.
+      </p>
+
+      <div class="callout java-note">
+        <strong class="callout-label">Java Analogy — Tokens as enum Ordinals</strong>
+        If you have ever mapped an <code class="inline">enum</code> to its ordinal for serialization,
+        tokenization is conceptually similar. Each token string is assigned a unique integer. The model
+        processes those integers, and the output is decoded back to strings. The vocabulary is the
+        "enum registry" — a bidirectional map between string pieces and integer IDs.
+      </div>
+
+      <!-- NEURAL NETWORK -->
+      <h3 class="subsection-title" id="s2-nn">1.2.2 The Neural Network: A Composition of Functions</h3>
+
+      <p>
+        A neural network is, at its core, a large mathematical function. Given an input vector
+        <strong>x</strong>, it produces an output vector <strong>y</strong>:
+      </p>
+
+      <div class="math-block">
+        $$ \mathbf{y} = f_{\theta}(\mathbf{x}) $$
+        <div class="math-caption">
+          The model function \( f_{\theta} \) maps input \( \mathbf{x} \) to output \( \mathbf{y} \).
+          The subscript \( \theta \) (theta) denotes all learnable parameters.
+        </div>
+      </div>
+
+      <p>
+        For a language model, the input <strong>x</strong> is a sequence of token IDs, and the output
+        <strong>y</strong> is a probability distribution over the vocabulary — a list of probabilities,
+        one per token, summing to 1. The token with the highest probability is (usually) chosen as the
+        next word in the sequence.
+      </p>
+
+      <p>
+        Internally, the function \( f_{\theta} \) is composed of many simpler functions stacked in
+        layers. Each layer transforms the data slightly, and the transformations are controlled by
+        learned numeric values called <em>weights</em>. The composition of all those layers is
+        called a <em>deep neural network</em> (the "deep" refers to having many layers).
+      </p>
+
+      <p>
+        A single layer typically looks like this:
+      </p>
+
+      <div class="math-block">
+        $$ \mathbf{h}^{(l+1)} = \sigma\!\left( \mathbf{W}^{(l)} \mathbf{h}^{(l)} + \mathbf{b}^{(l)} \right) $$
+        <div class="math-caption">
+          One layer of a neural network. \( \mathbf{h}^{(l)} \) is the layer's input (a vector);
+          \( \mathbf{W}^{(l)} \) is the weight matrix; \( \mathbf{b}^{(l)} \) is the bias vector;
+          \( \sigma \) is a nonlinear activation function (e.g., ReLU or GELU).
+        </div>
+      </div>
+
+      <p>
+        Do not be alarmed by the notation. In plain language: take the input, multiply it by a matrix
+        of numbers (\( \mathbf{W} \)), add a small offset (\( \mathbf{b} \)), then apply a simple
+        nonlinear function to introduce the ability to capture complex patterns. Repeat this for every
+        layer. The entire model is nothing more — and nothing less — than this repeated pattern.
+      </p>
+
+      <div class="callout java-note">
+        <strong class="callout-label">Java Analogy — Layers as Method Chains</strong>
+        Think of each layer as a method that takes a <code class="inline">double[]</code> array,
+        applies a matrix multiplication and an element-wise function, and returns a new
+        <code class="inline">double[]</code>. The network is a chain of those method calls:
+        <code class="inline">layer3(layer2(layer1(embed(input))))</code>.
+        The "learning" phase finds the values for the matrices inside each layer.
+      </div>
+
+      <!-- EMBEDDINGS -->
+      <h4 class="micro-title">Embeddings: Giving Tokens Meaning</h4>
+
+      <p>
+        Token IDs are arbitrary integers — the number 1842 doesn't mean anything mathematical.
+        Before processing, each integer is converted to a high-dimensional <em>embedding vector</em>:
+        a list of, say, 2048 floating-point numbers that represent the token's <em>meaning</em> in
+        a learned geometric space.
+      </p>
+
+      <div class="math-block">
+        $$ \mathbf{e}_i = \mathbf{E}[t_i] \in \mathbb{R}^{d_{\text{model}}} $$
+        <div class="math-caption">
+          Token \( t_i \) (an integer) is looked up in embedding matrix \( \mathbf{E} \) to produce
+          a vector \( \mathbf{e}_i \) of dimension \( d_{\text{model}} \).
+          For Qwen3-0.6B, \( d_{\text{model}} = 1024 \).
+        </div>
+      </div>
+
+      <p>
+        Embeddings capture semantic relationships. Words with similar meanings cluster nearby in this
+        high-dimensional space. The famous example is:
+      </p>
+
+      <div class="math-block">
+        $$ \text{emb}(\text{"king"}) - \text{emb}(\text{"man"}) + \text{emb}(\text{"woman"}) \approx \text{emb}(\text{"queen"}) $$
+        <div class="math-caption">
+          Vector arithmetic in embedding space captures analogical relationships.
+        </div>
+      </div>
+
+      <!-- WEIGHTS -->
+      <h3 class="subsection-title" id="s2-weights">1.2.3 Weights and Parameters: The Model's Knowledge</h3>
+
+      <p>
+        Every weight in the network is a single floating-point number. Together, these numbers
+        encode everything the model has learned. A model described as having "7 billion parameters"
+        has approximately 7 × 10⁹ such numbers stored in memory. At 16-bit (half) precision, that
+        amounts to roughly 14 GB of data — which is why GPU memory capacity matters.
+      </p>
+
+      <div class="data-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Model Size</th>
+              <th>Parameter Count</th>
+              <th>Memory (16-bit)</th>
+              <th>Consumer GPU?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Qwen3-0.6B</td><td>~600 million</td><td>~1.2 GB</td><td>Yes</td></tr>
+            <tr><td>Qwen3-1.7B</td><td>~1.7 billion</td><td>~3.4 GB</td><td>Yes</td></tr>
+            <tr><td>Qwen3-4B</td><td>~4 billion</td><td>~8 GB</td><td>Yes (8 GB VRAM)</td></tr>
+            <tr><td>Qwen3-7B</td><td>~7 billion</td><td>~14 GB</td><td>Yes (16+ GB VRAM)</td></tr>
+            <tr><td>DeepSeek-R1</td><td>~671 billion</td><td>~1.3 TB</td><td>No — multi-GPU cluster</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="math-caption" style="text-align:left; margin-top:-1rem;">
+        Table 1.1 — Representative model sizes. This book primarily uses Qwen3-0.6B and Qwen3-1.7B
+        for training experiments to remain tractable on consumer hardware.
+      </p>
+
+      <!-- PRE-TRAINING -->
+      <h3 class="subsection-title" id="s2-pretrain">1.2.4 Pre-training: How the Model Learns Its World Model</h3>
+
+      <p>
+        Weights are not hand-coded. They are <em>learned</em> through a process called
+        <em>pre-training</em>: exposing the model to an enormous corpus of text — hundreds of billions
+        of tokens scraped from the web, books, code repositories, and scientific papers — and
+        repeatedly adjusting the weights to make the model better at predicting the next token.
+      </p>
+
+      <p>
+        The adjustment procedure is called <em>gradient descent</em>. It works as follows:
+      </p>
+
+      <ol class="steps">
+        <li>
+          <p>
+            <strong>Forward pass</strong> — Feed a batch of text sequences through the model; for
+            each position, compute the predicted probability distribution over the vocabulary.
+          </p>
+        </li>
+        <li>
+          <p>
+            <strong>Compute loss</strong> — Compare predictions to the actual next tokens using
+            <em>cross-entropy loss</em>: a single number measuring how wrong the model was.
+          </p>
+        </li>
+        <li>
+          <p>
+            <strong>Backward pass (backpropagation)</strong> — Use the chain rule of calculus to
+            compute, for every weight in the network, how much a small change in that weight
+            would increase or decrease the loss.
+          </p>
+        </li>
+        <li>
+          <p>
+            <strong>Update weights</strong> — Nudge every weight in the direction that reduces the
+            loss by a tiny amount (the <em>learning rate</em>).
+          </p>
+        </li>
+        <li>
+          <p>
+            <strong>Repeat</strong> — Billions of times, over trillions of tokens.
+          </p>
+        </li>
+      </ol>
+
+      <div class="math-block">
+        $$
+        \mathcal{L}_{\text{CE}} = -\frac{1}{N} \sum_{i=1}^{N} \log P_{\theta}(t_i \mid t_1, \ldots, t_{i-1})
+        $$
+        <div class="math-caption">
+          Cross-entropy loss for a sequence of \( N \) tokens. \( P_{\theta}(t_i \mid \cdots) \)
+          is the probability the model assigned to the correct next token. The model learns to
+          maximize this probability (minimize the negative log).
+        </div>
+      </div>
+
+      <p>
+        After pre-training on enough data, the model has implicitly learned grammar, facts, reasoning
+        patterns, code syntax, and much more — all encoded in those billions of weights. This is
+        why a pre-trained model can answer questions it was never explicitly taught to answer: it
+        has built an internal world model by learning to predict text.
+      </p>
+
+      <div class="callout warning">
+        <strong class="callout-label">Important Misconception to Avoid</strong>
+        A language model does not have a database of facts it looks up. It has no external memory.
+        All knowledge is encoded as patterns in the weights, compressed and sometimes distorted.
+        This is why models can "hallucinate" — confabulate plausible-sounding but incorrect facts.
+        Understanding this limitation is crucial for understanding why we need additional techniques
+        like reinforcement learning to improve reliability.
+      </div>
+    </section>
+
+    <hr class="hr-section" />
+
+    <!-- ══════════════════════════════════════════
+         SECTION 1.3
+    ══════════════════════════════════════════ -->
+    <section class="section" id="s3">
+      <h2 class="section-title"><span class="section-num">1.3</span> From Text Prediction to Language Understanding</h2>
+
+      <p>
+        A surprising philosophical point deserves attention before we go further: the only training
+        signal a pre-trained LLM ever receives is <em>predict the next token</em>. No labels, no
+        explicit reasoning examples, no human feedback. Yet from this single, simple objective,
+        massively capable models emerge. How?
+      </p>
+
+      <!-- NTP -->
+      <h3 class="subsection-title" id="s3-ntp">1.3.1 Next-Token Prediction as the Universal Pre-training Objective</h3>
+
+      <p>
+        To predict the next token well across all the domains in its training corpus, a model
+        <em>must</em> acquire the underlying structure of those domains. Predicting the next word in
+        a physics paper requires understanding physics. Predicting the next line of Java code requires
+        understanding Java syntax and semantics. Predicting the continuation of a multi-step proof
+        requires following logical deductions.
+      </p>
+
+      <p>
+        The task is an implicit compression challenge: the model must find the shortest description
+        of all text it has seen — a description stored in its weights — that allows it to regenerate
+        any part of that text. This enforces generalization rather than memorization of individual
+        sentences.
+      </p>
+
+      <div class="callout definition">
+        <strong class="callout-label">Definition — Autoregressive Generation</strong>
+        A model that generates output token-by-token, conditioning each new token on all previously
+        generated tokens, is called <em>autoregressive</em>. The word comes from time-series analysis:
+        each output is a "regression" on its own past. Virtually all modern LLMs, including Qwen3,
+        GPT-4, and DeepSeek R1, are autoregressive Transformers.
+      </div>
+
+      <!-- ATTENTION -->
+      <h3 class="subsection-title" id="s3-attention">1.3.2 The Attention Mechanism: How Context Is Integrated</h3>
+
+      <p>
+        A plain feed-forward network processes each token independently and cannot capture
+        long-range dependencies — it cannot know that the pronoun "it" in the twentieth sentence
+        refers to the noun introduced in the first. The <em>attention mechanism</em>, introduced in
+        the 2017 paper <em>Attention Is All You Need</em>, solves this.
+      </p>
+
+      <p>
+        Attention allows every token in the sequence to "look at" every other token and decide how
+        much to incorporate that other token's information when building its own representation.
+        Mathematically, for a sequence of token vectors stacked into a matrix \( \mathbf{X} \),
+        attention computes:
+      </p>
+
+      <div class="math-block">
+        $$
+        \text{Attention}(\mathbf{Q}, \mathbf{K}, \mathbf{V})
+        = \text{softmax}\!\left( \frac{\mathbf{Q}\mathbf{K}^\top}{\sqrt{d_k}} \right) \mathbf{V}
+        $$
+        <div class="math-caption">
+          Scaled dot-product attention. Queries \( \mathbf{Q} \), keys \( \mathbf{K} \), and
+          values \( \mathbf{V} \) are linear projections of the input. The \( \sqrt{d_k} \)
+          scaling prevents numerical instability with large dimensions.
+        </div>
+      </div>
+
+      <p>
+        Intuitively: each token asks a <em>query</em> ("what am I looking for?"), every other token
+        presents a <em>key</em> ("here is what I offer"), and the dot product between them produces a
+        <em>score</em> (how relevant is that token to me?). After softmax normalization, these scores
+        become weights applied to the <em>values</em> (the actual information to incorporate).
+      </p>
+
+      <p>
+        The result: each token's representation is a weighted blend of the representations of all other
+        tokens in the context, where the weights reflect learned relevance — not fixed positional rules.
+      </p>
+
+      <!-- CONTEXT WINDOW -->
+      <h3 class="subsection-title" id="s3-context">1.3.3 The Context Window: Memory Limits and Their Consequences</h3>
+
+      <p>
+        Attention is applied over the entire sequence simultaneously, but the sequence has a maximum
+        length called the <em>context window</em> (or context length). Tokens beyond this limit are
+        simply not visible to the model. For Qwen3 models, the context window is 32,768 tokens
+        (approximately 24,000 words of English text).
+      </p>
+
+      <p>
+        The context window is the model's entire working memory. Everything relevant to generating
+        the current token must fit within it: the user's question, any prior conversation, retrieved
+        documents, and the model's own generated reasoning trace. This constraint shapes many
+        practical decisions — including how we structure long thinking chains in reasoning models.
+      </p>
+
+      <div class="callout note">
+        <strong class="callout-label">Computational Cost of Attention</strong>
+        The attention mechanism has a computational cost that grows quadratically with sequence length —
+        \( O(n^2) \) in both time and memory, where \( n \) is the number of tokens. Doubling the
+        context length quadruples the memory. This is why very long contexts require specialized
+        hardware or algorithmic improvements (e.g., FlashAttention).
+      </div>
+    </section>
+
+    <hr class="hr-section" />
+
+    <!-- ══════════════════════════════════════════
+         SECTION 1.4
+    ══════════════════════════════════════════ -->
+    <section class="section" id="s4">
+      <h2 class="section-title"><span class="section-num">1.4</span> What Makes a Model "Reason"?</h2>
+
+      <p>
+        We now have a working definition of a language model. But we have not yet explained what
+        distinguishes a <em>reasoning</em> model from a plain language model. This section makes
+        that distinction precise.
+      </p>
+
+      <!-- SHALLOW ANSWER -->
+      <h3 class="subsection-title" id="s4-problem">1.4.1 The Shallow-Answer Problem</h3>
+
+      <p>
+        Consider the following question posed to a base language model:
+      </p>
+
+      <div class="callout note">
+        <strong class="callout-label">Problem</strong>
+        A bat and a ball together cost $1.10. The bat costs $1.00 more than the ball.
+        How much does the ball cost?
+      </div>
+
+      <p>
+        The intuitive answer — and the answer many base LLMs give — is <strong>$0.10</strong>.
+        But this is wrong. If the ball costs $0.10 and the bat costs $1.00 more, the bat costs
+        $1.10, making the total $1.20, not $1.10. The correct answer is $0.05.
+      </p>
+
+      <p>
+        This is the classic bat-and-ball problem from behavioral economics, where it is used to
+        demonstrate System 1 thinking (fast, intuitive, often wrong) versus System 2 thinking (slow,
+        deliberate, careful). A base language model that responds with the first plausible-sounding
+        token sequence is exhibiting System 1 behavior. A reasoning model forces System 2 behavior.
+      </p>
+
+      <p>
+        More concretely, setting up the equations reveals the error:
+      </p>
+
+      <div class="math-block">
+        $$
+        \begin{aligned}
+        \text{Let } b &= \text{price of ball}, \quad \text{bat} = b + 1.00 \\
+        b + (b + 1.00) &= 1.10 \\
+        2b &= 0.10 \\
+        b &= 0.05
+        \end{aligned}
+        $$
+        <div class="math-caption">
+          The correct solution requires setting up and solving a simple system of equations —
+          a step-by-step process, not an immediate pattern match.
+        </div>
+      </div>
+
+      <!-- CHAIN OF THOUGHT -->
+      <h3 class="subsection-title" id="s4-cot">1.4.2 Chain of Thought: Deliberation in Text</h3>
+
+      <p>
+        The key insight behind reasoning models is deceptively simple: <em>if we ask the model to
+        write out its thinking before giving a final answer, it makes fewer mistakes</em>.
+      </p>
+
+      <p>
+        This technique is called <em>chain-of-thought (CoT) prompting</em>. Instead of:
+      </p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span>Standard (direct-answer) prompt</span>
+          <span class="lang-badge pseudo">PROMPT</span>
+        </div>
+        <pre>Q: A bat and a ball together cost $1.10. The bat costs $1.00 more
+   than the ball. How much does the ball cost?
+A:</pre>
+      </div>
+
+      <p>A chain-of-thought prompt encourages explicit reasoning:</p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span>Chain-of-thought prompt</span>
+          <span class="lang-badge pseudo">PROMPT</span>
+        </div>
+        <pre>Q: A bat and a ball together cost $1.10. The bat costs $1.00 more
+   than the ball. How much does the ball cost?
+   Think step by step.
+A: Let me define variables. Let b = cost of ball in dollars.
+   Then the bat costs b + 1.00 dollars.
+   Together: b + (b + 1.00) = 1.10
+   Simplify: 2b + 1.00 = 1.10
+   Solve: 2b = 0.10, so b = 0.05
+   The ball costs $0.05.</pre>
+      </div>
+
+      <p>
+        The phrase "Think step by step" triggers the model to generate intermediate reasoning tokens.
+        Because the model conditions each new token on all previous tokens, generating the algebraic
+        setup in the middle of the response forces the final answer to be consistent with that setup.
+        The model <em>cannot hallucinate a wrong answer if it has correctly worked out the algebra
+        one step earlier</em> — the attention mechanism makes the correct answer the most probable
+        continuation.
+      </p>
+
+      <div class="callout definition">
+        <strong class="callout-label">Definition — Thinking Tokens</strong>
+        In modern reasoning models (GPT-o1, DeepSeek R1, Qwen3 with thinking mode), the model
+        generates a special block of text enclosed in tags such as <code class="inline">&lt;think&gt;...&lt;/think&gt;</code>
+        before the visible answer. This block contains the chain of thought and may span thousands
+        of tokens. Users typically see only the final answer; the thinking trace is either hidden
+        or shown as a collapsible section.
+      </div>
+
+      <!-- DEEPSEEK -->
+      <h3 class="subsection-title" id="s4-ds">1.4.3 The DeepSeek R1 Breakthrough</h3>
+
+      <p>
+        The DeepSeek R1 model, published in January 2025, demonstrated something remarkable:
+        a model could <em>learn</em> to reason — not by being fine-tuned on human-written reasoning
+        examples, but by <em>discovering</em> reasoning strategies on its own through reinforcement
+        learning. The model received a reward signal only for correct final answers (verifiable
+        outputs like math solutions or code that passes tests). Through thousands of training
+        steps, it spontaneously developed:
+      </p>
+
+      <ul style="padding-left:1.4rem; margin:0.8rem 0 1rem;">
+        <li style="margin-bottom:0.5rem;">Long chains of thought before answering.</li>
+        <li style="margin-bottom:0.5rem;">Self-correction — recognizing mid-chain that a previous step was wrong.</li>
+        <li style="margin-bottom:0.5rem;">Exploration of multiple solution paths before committing.</li>
+        <li style="margin-bottom:0.5rem;">Verification of answers against the problem statement.</li>
+      </ul>
+
+      <p>
+        These capabilities emerged without being programmed explicitly — purely from the reward
+        pressure to produce correct answers. This is analogous to a software system converging on
+        an efficient algorithm not because it was hard-coded, but because its tests passed only for
+        correct implementations.
+      </p>
+
+      <div class="callout tip">
+        <strong class="callout-label">Key Insight</strong>
+        Reasoning behavior is not a feature you add to a language model. It is a behavior the model
+        <em>learns</em> because it is rewarded for correct, verifiable outcomes. The role of the
+        researcher is to design the right reward signal — not to hand-craft the reasoning strategy.
+      </div>
+    </section>
+
+    <hr class="hr-section" />
+
+    <!-- ══════════════════════════════════════════
+         SECTION 1.5
+    ══════════════════════════════════════════ -->
+    <section class="section" id="s5">
+      <h2 class="section-title"><span class="section-num">1.5</span> Three Approaches to Building Reasoning Models</h2>
+
+      <p>
+        This book covers three distinct techniques for building reasoning models. They are not mutually
+        exclusive — DeepSeek R1 used all three in sequence. The figure below shows how they relate:
+      </p>
+
+      <figure>
+        <div class="diagram">
+Pre-trained Base LLM (Qwen3)
+        │
+        ▼
+┌───────────────────────────────────────────────────────┐
+│  Approach 1: Inference-Time Scaling                   │
+│  No training needed. Generate more tokens at          │
+│  inference time (longer chains, best-of-N,            │
+│  self-refinement) to improve accuracy.                │
+└───────────────────────────────────────────────────────┘
+        │
+        ▼
+┌───────────────────────────────────────────────────────┐
+│  Approach 2: Reinforcement Learning (GRPO/RLVR)       │
+│  Training phase. Reward the model for correct         │
+│  final answers. Model learns to reason to earn        │
+│  that reward.                                         │
+└───────────────────────────────────────────────────────┘
+        │
+        ▼
+┌───────────────────────────────────────────────────────┐
+│  Approach 3: Knowledge Distillation                   │
+│  Training phase. Train a small model on outputs       │
+│  from a large reasoning model, inheriting its         │
+│  reasoning style efficiently.                         │
+└───────────────────────────────────────────────────────┘
+        │
+        ▼
+  Reasoning Model
+        </div>
+        <figcaption>Figure 1.1 — The three approaches covered in this book, applied sequentially to a base LLM.</figcaption>
+      </figure>
+
+      <!-- ITS -->
+      <h3 class="subsection-title" id="s5-its">1.5.1 Inference-Time Scaling</h3>
+
+      <p>
+        <em>Inference-time scaling</em> improves model performance by computing more during the
+        prediction phase — generating longer responses, producing multiple candidate answers, or
+        iteratively refining outputs — without changing any weights. The insight is that the model
+        already has most of the knowledge it needs; it just needs more "thinking time" to apply it
+        correctly.
+      </p>
+
+      <p>
+        This book covers two primary inference-time scaling strategies:
+      </p>
+
+      <div class="data-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th>Idea</th>
+              <th>When to Use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Best-of-N Sampling</strong></td>
+              <td>Generate N independent answers; select the best one using a verifier or majority vote.</td>
+              <td>When you have a reliable verifier (math, code).</td>
+            </tr>
+            <tr>
+              <td><strong>Self-Refinement</strong></td>
+              <td>Generate an initial answer, critique it, then produce an improved version.</td>
+              <td>When the model can self-evaluate.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        The performance gain from inference-time scaling follows a predictable curve: accuracy
+        increases with more compute, but with diminishing returns. There is an optimal compute budget
+        for any given task. Chapter 4 explores this in depth with experiments.
+      </p>
+
+      <!-- REINFORCEMENT LEARNING -->
+      <h3 class="subsection-title" id="s5-rl">1.5.2 Reinforcement Learning with Verifiable Rewards (RLVR)</h3>
+
+      <p>
+        Reinforcement learning (RL) is a training paradigm in which an <em>agent</em> takes
+        <em>actions</em> in an <em>environment</em> and receives <em>rewards</em> based on the
+        outcome. Applied to language models:
+      </p>
+
+      <div class="data-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>RL Concept</th>
+              <th>Language Model Equivalent</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Agent</td><td>The language model</td></tr>
+            <tr><td>Action</td><td>Generating the next token</td></tr>
+            <tr><td>Episode</td><td>A complete response (from prompt to final token)</td></tr>
+            <tr><td>Reward</td><td>A score given to the complete response (e.g., +1 if correct)</td></tr>
+            <tr><td>Policy</td><td>The model's probability distribution over tokens</td></tr>
+            <tr><td>Policy update</td><td>Gradient descent to make rewarded responses more likely</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        The specific algorithm used in this book is <em>Group Relative Policy Optimization (GRPO)</em>,
+        a variant of proximal policy optimization designed specifically for language models. It
+        generates multiple responses for each prompt, computes their relative rewards, and updates
+        the model to assign higher probability to better responses.
+      </p>
+
+      <div class="math-block">
+        $$
+        \mathcal{L}_{\text{GRPO}} = -\mathbb{E}\!\left[
+          \sum_{t} \min\!\left(
+            r_t(\theta) \hat{A}_t,\;
+            \text{clip}(r_t(\theta), 1-\varepsilon, 1+\varepsilon)\hat{A}_t
+          \right)
+        \right]
+        $$
+        <div class="math-caption">
+          The GRPO objective (simplified). \( r_t(\theta) \) is the probability ratio between the
+          new and old policy at token \( t \); \( \hat{A}_t \) is the estimated advantage
+          (how much better than average this response was); clipping keeps updates stable.
+          Do not worry about this formula now — Chapter 6 derives it step by step.
+        </div>
+      </div>
+
+      <div class="callout note">
+        <strong class="callout-label">Why "Verifiable" Rewards?</strong>
+        RLVR specifically uses rewards for tasks where correctness can be verified automatically —
+        mathematics (check the numerical answer), code (run unit tests), logic puzzles (check the
+        solution). This avoids needing a separate "reward model" trained on human preference data,
+        which is expensive and can be gamed. If the answer is provably right, the reward signal
+        is clean and unambiguous.
+      </div>
+
+      <!-- DISTILLATION -->
+      <h3 class="subsection-title" id="s5-distill">1.5.3 Knowledge Distillation</h3>
+
+      <p>
+        <em>Knowledge distillation</em> is a technique for transferring the capabilities of a large
+        (teacher) model into a smaller (student) model. Instead of training the student from scratch
+        or using reinforcement learning, you fine-tune the student on text <em>generated by the
+        teacher</em>.
+      </p>
+
+      <p>
+        For reasoning models, this means:
+      </p>
+
+      <ol class="steps">
+        <li>
+          <p>
+            Use a large, high-quality reasoning model (e.g., DeepSeek R1 671B or GPT-4o) as the
+            <em>teacher</em>. Generate many question–reasoning-trace–answer triples.
+          </p>
+        </li>
+        <li>
+          <p>
+            Fine-tune the small <em>student</em> model on those triples using standard supervised
+            training (next-token prediction on the teacher's responses).
+          </p>
+        </li>
+        <li>
+          <p>
+            The student learns to mimic the teacher's reasoning style, achieving near-teacher
+            performance at a fraction of the parameter count and compute cost.
+          </p>
+        </li>
+      </ol>
+
+      <p>
+        Distillation is highly effective when the teacher is much stronger than the student. DeepSeek
+        demonstrated that a 7B-parameter model distilled from the 671B R1 model outperforms the
+        non-distilled 7B model by a substantial margin.
+      </p>
+
+      <div class="callout tip">
+        <strong class="callout-label">Why Distillation Is Practical for Developers</strong>
+        You do not need to own or run the teacher model yourself. You can call a commercial API
+        (OpenRouter, OpenAI) to generate teacher outputs, then fine-tune your small student model
+        locally. Chapter 8 walks through exactly this workflow.
+      </div>
+    </section>
+
+    <hr class="hr-section" />
+
+    <!-- ══════════════════════════════════════════
+         SECTION 1.6
+    ══════════════════════════════════════════ -->
+    <section class="section" id="s6">
+      <h2 class="section-title"><span class="section-num">1.6</span> The Qwen3 Base Model</h2>
+
+      <p>
+        Every technique in this book is applied to <strong>Qwen3</strong>, a family of open-weight
+        transformer models released by Alibaba's Qwen team in 2025. This section explains what Qwen3
+        is, why this book chose it, and what you need to know about its architecture before writing
+        code in Chapter 2.
+      </p>
+
+      <h3 class="subsection-title">1.6.1 Why Qwen3?</h3>
+
+      <p>
+        Three criteria drove the choice of Qwen3 as the base model for this book:
+      </p>
+
+      <div class="data-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Criterion</th>
+              <th>How Qwen3 Meets It</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Open weights</strong></td>
+              <td>
+                Qwen3 weights are publicly available under a permissive license. You can download,
+                modify, fine-tune, and redistribute them.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Scale variety</strong></td>
+              <td>
+                The Qwen3 family spans 0.6B to 235B parameters, allowing the book's code to run
+                on a laptop (0.6B) or scale to serious research (7B+).
+              </td>
+            </tr>
+            <tr>
+              <td><strong>High baseline quality</strong></td>
+              <td>
+                Even the 0.6B model produces coherent, grammatical text and has basic mathematical
+                reasoning ability — making improvements clearly measurable.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="subsection-title">1.6.2 Qwen3 Architecture at a Glance</h3>
+
+      <p>
+        Qwen3 is a <em>decoder-only Transformer</em>. This means it uses only the decoder portion
+        of the original Transformer architecture (unlike encoder-decoder models like the original
+        T5 or BERT variants). Decoder-only models are the dominant architecture for generative
+        language models today (GPT, LLaMA, Mistral, Gemma, DeepSeek are all decoder-only).
+      </p>
+
+      <p>
+        Key architectural details relevant to the exercises in this book:
+      </p>
+
+      <div class="data-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>What It Does</th>
+              <th>Qwen3-0.6B Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Vocabulary size</td>
+              <td>Number of distinct tokens the model understands</td>
+              <td>151,936 tokens</td>
+            </tr>
+            <tr>
+              <td>Embedding dimension (d_model)</td>
+              <td>Width of each token's vector representation</td>
+              <td>1,024</td>
+            </tr>
+            <tr>
+              <td>Number of layers</td>
+              <td>Depth of the transformer stack</td>
+              <td>28</td>
+            </tr>
+            <tr>
+              <td>Attention heads</td>
+              <td>Parallel attention computations per layer</td>
+              <td>16</td>
+            </tr>
+            <tr>
+              <td>Context window</td>
+              <td>Maximum tokens visible in one pass</td>
+              <td>32,768 tokens</td>
+            </tr>
+            <tr>
+              <td>Positional encoding</td>
+              <td>How position information is injected</td>
+              <td>RoPE (Rotary Position Embedding)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Qwen3 also supports a <em>thinking mode</em> — when enabled, the model generates a
+        <code class="inline">&lt;think&gt;</code> block before its answer. This native capability
+        makes it a natural starting point for reasoning experiments.
+      </p>
+
+      <div class="callout note">
+        <strong class="callout-label">Note — Appendix C</strong>
+        Appendix C of this book contains a detailed walkthrough of the full Qwen3 source code in
+        Python. If you want to understand every line of the transformer implementation, that is
+        the place to go after finishing Chapter 2.
+      </div>
+    </section>
+
+    <hr class="hr-section" />
+
+    <!-- ══════════════════════════════════════════
+         SECTION 1.7
+    ══════════════════════════════════════════ -->
+    <section class="section" id="s7">
+      <h2 class="section-title"><span class="section-num">1.7</span> Overview of This Book</h2>
+
+      <p>
+        Now that you have the conceptual foundation, let us map the rest of the journey. The book
+        is organized as a progressive layering of capability onto a base model:
+      </p>
+
+      <div class="data-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Chapter</th>
+              <th>Title</th>
+              <th>What You Build</th>
+              <th>Key Technique</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Understanding Reasoning Models</td>
+              <td>Conceptual foundation</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Generating Text with a Pre-trained LLM</td>
+              <td>Load Qwen3, run inference</td>
+              <td>Greedy &amp; sampling decoding</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Evaluating Reasoning Models</td>
+              <td>Evaluation pipeline on MATH-500</td>
+              <td>Exact-match &amp; LLM-as-judge</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Inference-Time Scaling</td>
+              <td>CoT prompting, best-of-N, majority vote</td>
+              <td>Inference-time compute</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Self-Refinement</td>
+              <td>Iterative critique and revision</td>
+              <td>Self-refinement loops</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>RL Training with GRPO</td>
+              <td>Fine-tune model with verifiable rewards</td>
+              <td>GRPO / RLVR</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>Improving GRPO</td>
+              <td>Advanced GRPO variants</td>
+              <td>DeepSeek-style improvements</td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td>Distillation</td>
+              <td>Train small model from teacher outputs</td>
+              <td>Knowledge distillation</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        The appendices provide deeper dives: the full Qwen3 source (Appendix C), larger-model
+        usage on server hardware (Appendix D), batching for throughput (Appendix E), evaluation
+        methods (Appendix F), and building a chat interface (Appendix G).
+      </p>
+
+      <div class="callout tip">
+        <strong class="callout-label">Recommended Reading Path</strong>
+        Read Chapters 1–3 in order — they build the foundation. Chapters 4–5 (inference-time
+        techniques) are relatively self-contained and accessible. Chapters 6–8 (training techniques)
+        require a working GPU. If you want to understand the big picture before diving into code,
+        reading Chapter 1 carefully and skimming the summary sections of Chapters 4–8 is a
+        productive first pass.
+      </div>
+    </section>
+
+    <hr class="hr-section" />
+
+    <!-- ══════════════════════════════════════════
+         SECTION 1.8
+    ══════════════════════════════════════════ -->
+    <section class="section" id="s8">
+      <h2 class="section-title"><span class="section-num">1.8</span> For the Java Developer: Python in 15 Minutes</h2>
+
+      <p>
+        The practical code in this book is written in Python. If your primary language is Java,
+        this section gives you enough Python to read and modify the notebooks without friction. It
+        is deliberately structured as a set of direct comparisons — not a Python tutorial from
+        scratch, but a <em>translation guide</em> for someone who already thinks in Java.
+      </p>
+
+      <!-- SYNTAX -->
+      <h3 class="subsection-title" id="s8-syntax">1.8.1 Syntax and Structure</h3>
+
+      <p>
+        The most striking syntactic difference for a Java developer is that Python uses
+        <em>indentation</em> to delimit blocks instead of braces. There are no semicolons,
+        no mandatory type declarations, and no <code class="inline">public static void main</code>
+        ceremony.
+      </p>
+
+      <div class="comparison-grid">
+        <div>
+          <div class="code-container">
+            <div class="code-header">
+              <span>Java — class and method</span>
+              <span class="lang-badge java">Java</span>
+            </div>
+            <pre class="java-code">public class Greeter {
+    private String name;
+
+    public Greeter(String name) {
+        this.name = name;
+    }
+
+    public String greet() {
+        if (this.name.isEmpty()) {
+            return "Hello, world!";
+        } else {
+            return "Hello, " + this.name + "!";
+        }
+    }
+}</pre>
+          </div>
+        </div>
+        <div>
+          <div class="code-container">
+            <div class="code-header">
+              <span>Python — equivalent class</span>
+              <span class="lang-badge python">Python</span>
+            </div>
+            <pre>class Greeter:
+    def __init__(self, name: str):
+        self.name = name
+
+    def greet(self) -> str:
+        if not self.name:
+            return "Hello, world!"
+        else:
+            return f"Hello, {self.name}!"</pre>
+          </div>
+        </div>
+      </div>
+
+      <p>
+        Notice the structural parallels: <code class="inline">__init__</code> is the constructor,
+        <code class="inline">self</code> is <code class="inline">this</code>, and the colon at
+        the end of <code class="inline">class</code>, <code class="inline">def</code>, and
+        <code class="inline">if</code> lines replaces the opening brace. The <code class="inline">f"..."</code>
+        syntax is a formatted string — equivalent to Java's <code class="inline">String.format()</code>
+        or <code class="inline">+ name + "!"</code> concatenation.
+      </p>
+
+      <h4 class="micro-title">Functions</h4>
+
+      <div class="comparison-grid">
+        <div>
+          <div class="code-container">
+            <div class="code-header">
+              <span>Java — static method</span>
+              <span class="lang-badge java">Java</span>
+            </div>
+            <pre class="java-code">public static int add(int a, int b) {
+    return a + b;
+}
+
+// Call:
+int result = add(3, 4);</pre>
+          </div>
+        </div>
+        <div>
+          <div class="code-container">
+            <div class="code-header">
+              <span>Python — function</span>
+              <span class="lang-badge python">Python</span>
+            </div>
+            <pre>def add(a: int, b: int) -> int:
+    return a + b
+
+# Call:
+result = add(3, 4)</pre>
+          </div>
+        </div>
+      </div>
+
+      <h4 class="micro-title">Loops and Comprehensions</h4>
+
+      <div class="comparison-grid">
+        <div>
+          <div class="code-container">
+            <div class="code-header">
+              <span>Java — for-each + List</span>
+              <span class="lang-badge java">Java</span>
+            </div>
+            <pre class="java-code">List&lt;Integer&gt; nums = List.of(1,2,3,4,5);
+List&lt;Integer&gt; doubled = new ArrayList&lt;&gt;();
+for (int n : nums) {
+    doubled.add(n * 2);
+}</pre>
+          </div>
+        </div>
+        <div>
+          <div class="code-container">
+            <div class="code-header">
+              <span>Python — list comprehension</span>
+              <span class="lang-badge python">Python</span>
+            </div>
+            <pre>nums = [1, 2, 3, 4, 5]
+doubled = [n * 2 for n in nums]
+# doubled == [2, 4, 6, 8, 10]</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- TYPES -->
+      <h3 class="subsection-title" id="s8-types">1.8.2 Types and Collections</h3>
+
+      <p>
+        Python is dynamically typed by default, but modern Python supports optional type hints
+        (used in this book for clarity). The core collection types map closely to Java:
+      </p>
+
+      <div class="data-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Java Type</th>
+              <th>Python Equivalent</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code class="inline">int</code>, <code class="inline">long</code></td>
+              <td><code class="inline">int</code> (arbitrary precision)</td>
+              <td><code class="inline">x = 42</code></td>
+            </tr>
+            <tr>
+              <td><code class="inline">double</code>, <code class="inline">float</code></td>
+              <td><code class="inline">float</code> (64-bit IEEE 754)</td>
+              <td><code class="inline">x = 3.14</code></td>
+            </tr>
+            <tr>
+              <td><code class="inline">boolean</code></td>
+              <td><code class="inline">bool</code></td>
+              <td><code class="inline">flag = True</code></td>
+            </tr>
+            <tr>
+              <td><code class="inline">String</code></td>
+              <td><code class="inline">str</code></td>
+              <td><code class="inline">s = "hello"</code></td>
+            </tr>
+            <tr>
+              <td><code class="inline">ArrayList&lt;T&gt;</code></td>
+              <td><code class="inline">list</code></td>
+              <td><code class="inline">lst = [1, 2, 3]</code></td>
+            </tr>
+            <tr>
+              <td><code class="inline">HashMap&lt;K,V&gt;</code></td>
+              <td><code class="inline">dict</code></td>
+              <td><code class="inline">d = {"key": "val"}</code></td>
+            </tr>
+            <tr>
+              <td><code class="inline">HashSet&lt;T&gt;</code></td>
+              <td><code class="inline">set</code></td>
+              <td><code class="inline">s = {1, 2, 3}</code></td>
+            </tr>
+            <tr>
+              <td><code class="inline">Optional&lt;T&gt;</code></td>
+              <td><code class="inline">T | None</code></td>
+              <td><code class="inline">val: str | None = None</code></td>
+            </tr>
+            <tr>
+              <td><code class="inline">Tuple (not built-in)</code></td>
+              <td><code class="inline">tuple</code></td>
+              <td><code class="inline">t = (1, "a", 3.0)</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- NUMPY -->
+      <h3 class="subsection-title" id="s8-numpy">1.8.3 NumPy and PyTorch: The Math Libraries</h3>
+
+      <p>
+        Virtually every numerical operation in this book uses either <em>NumPy</em> (for CPU
+        array math) or <em>PyTorch</em> (for GPU-accelerated tensor operations). If you have never
+        used these, think of them as libraries providing a type that is roughly equivalent to
+        a multi-dimensional <code class="inline">double[][]</code> in Java — but with broadcasting
+        (element-wise operations between arrays of compatible shapes), automatic differentiation,
+        and GPU dispatch built in.
+      </p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span>NumPy — creating and operating on arrays</span>
+          <span class="lang-badge python">Python / NumPy</span>
+        </div>
+        <pre>import numpy as np
+
+# Create a 2D array (like double[][] in Java)
+weights = np.array([[0.2, 0.8],
+                    [0.5, 0.1],
+                    [0.3, 0.6]])   # shape: (3, 2)
+
+# Element-wise operations broadcast automatically
+biases = np.array([0.1, -0.1, 0.0])   # shape: (3,)
+x = np.array([1.0, 2.0])              # shape: (2,)
+
+# Matrix-vector product: equivalent to W·x + b
+output = weights @ x + biases         # shape: (3,)
+print(output)   # array([1.80, 0.60, 1.50])</pre>
+      </div>
+
+      <div class="callout java-note">
+        <strong class="callout-label">Java Analogy — NumPy Array vs double[][]</strong>
+        In Java, computing <code class="inline">W * x + b</code> for matrices and vectors
+        requires nested loops. NumPy eliminates the loops entirely: the <code class="inline">@</code>
+        operator performs matrix multiplication, and arithmetic operators apply element-wise with
+        automatic shape broadcasting. Under the hood, NumPy calls highly optimized BLAS/LAPACK
+        routines — far faster than equivalent Java loops.
+      </div>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span>PyTorch — tensors on GPU</span>
+          <span class="lang-badge python">Python / PyTorch</span>
+        </div>
+        <pre>import torch
+
+# Create a tensor (NumPy array on steroids)
+x = torch.tensor([1.0, 2.0, 3.0])
+
+# Move to GPU (if available) — NumPy cannot do this
+device = "cuda" if torch.cuda.is_available() else "cpu"
+x = x.to(device)
+
+# PyTorch automatically builds a computation graph
+# enabling backpropagation (gradient computation)
+x = torch.tensor([2.0], requires_grad=True)
+y = x ** 2 + 3 * x + 1           # y = 4 + 6 + 1 = 11
+y.backward()                       # compute dy/dx
+print(x.grad)                      # tensor([7.]) — dy/dx = 2x+3 at x=2</pre>
+      </div>
+
+      <p>
+        The <code class="inline">requires_grad=True</code> flag tells PyTorch to track operations
+        on that tensor so it can automatically compute derivatives — this is <em>autograd</em>,
+        the engine behind backpropagation. You do not need to implement gradient formulas by hand;
+        PyTorch does it automatically using the chain rule.
+      </p>
+
+      <div class="callout tip">
+        <strong class="callout-label">You Do Not Need to Master Python Before Chapter 2</strong>
+        The code in this book is designed to be read top-to-bottom in a Jupyter notebook with
+        explanations above each cell. You will encounter new Python idioms naturally and in context.
+        This section gives you the minimum vocabulary to not be surprised. The rest you will
+        acquire by doing.
+      </div>
+    </section>
+
+    <hr class="hr-section" />
+
+    <!-- ══════════════════════════════════════════
+         SUMMARY
+    ══════════════════════════════════════════ -->
+    <section class="section" id="summary">
+      <h2 class="section-title">Summary</h2>
+
+      <div class="summary-box">
+        <h3>Chapter 1 Summary</h3>
+        <ul>
+          <li>
+            A <strong>large language model (LLM)</strong> is a neural network that generates text
+            by predicting the next token in a sequence. It is trained on massive text corpora using
+            gradient descent to minimize cross-entropy loss.
+          </li>
+          <li>
+            <strong>Tokens</strong> are sub-word chunks mapped to integers. <strong>Embeddings</strong>
+            are high-dimensional vectors that represent token meaning. <strong>Weights</strong>
+            are all the learnable numbers in the network, collectively encoding its world model.
+          </li>
+          <li>
+            The <strong>attention mechanism</strong> allows every token to selectively incorporate
+            information from every other token in the context, enabling the model to track
+            long-range dependencies in language.
+          </li>
+          <li>
+            A <strong>reasoning model</strong> generates explicit intermediate steps — a
+            <em>chain of thought</em> — before its final answer. This forces the model into
+            deliberate, sequential reasoning rather than immediate pattern matching.
+          </li>
+          <li>
+            The <strong>DeepSeek R1</strong> model demonstrated that reasoning behavior can emerge
+            spontaneously through reinforcement learning from correct answers, without requiring
+            hand-written reasoning examples.
+          </li>
+          <li>
+            This book covers three approaches to building reasoning models:
+            <strong>inference-time scaling</strong> (compute more at inference),
+            <strong>RLVR</strong> (train with verifiable rewards), and
+            <strong>distillation</strong> (learn from a teacher model).
+          </li>
+          <li>
+            The <strong>Qwen3</strong> model family is the base LLM for all experiments. Its
+            open weights, small variants (0.6B–1.7B), and native thinking mode make it ideal for
+            educational use on consumer hardware.
+          </li>
+          <li>
+            For Java developers, Python's core syntax is straightforward to learn. The most
+            important libraries are <strong>NumPy</strong> (array math) and <strong>PyTorch</strong>
+            (GPU-accelerated tensors and automatic differentiation).
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="hr-section" />
+
+    <!-- ══════════════════════════════════════════
+         KEY TERMS
+    ══════════════════════════════════════════ -->
+    <section class="section" id="keyterms">
+      <h2 class="section-title">Key Terms</h2>
+
+      <dl class="key-terms">
+        <div class="term-card">
+          <dt>Token</dt>
+          <dd>A variable-length sub-word unit of text, mapped to an integer ID by the tokenizer.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Embedding</dt>
+          <dd>A dense, real-valued vector representation of a token, encoding its meaning in high-dimensional space.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Weight / Parameter</dt>
+          <dd>A single learnable floating-point number inside the neural network. Collectively they encode the model's knowledge.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Pre-training</dt>
+          <dd>Large-scale training on text data using next-token prediction, producing a general-purpose base model.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Gradient Descent</dt>
+          <dd>The optimization algorithm that iteratively adjusts weights to minimize the loss function.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Cross-Entropy Loss</dt>
+          <dd>The training objective: negative log-probability of the correct next token.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Attention Mechanism</dt>
+          <dd>A layer that lets each token attend to (weight and incorporate) representations of all other tokens.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Context Window</dt>
+          <dd>The maximum number of tokens visible to the model in one forward pass — its working memory.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Autoregressive</dt>
+          <dd>Generating output one token at a time, conditioning each token on all previously generated tokens.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Chain of Thought (CoT)</dt>
+          <dd>Generating intermediate reasoning steps before a final answer, improving accuracy on multi-step tasks.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Reasoning Model</dt>
+          <dd>An LLM fine-tuned or prompted to produce explicit thinking traces before its answer.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Inference-Time Scaling</dt>
+          <dd>Improving quality by generating more tokens or candidates at inference time, without changing weights.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Reinforcement Learning (RL)</dt>
+          <dd>A training paradigm where an agent learns by receiving rewards for correct actions.</dd>
+        </div>
+        <div class="term-card">
+          <dt>GRPO</dt>
+          <dd>Group Relative Policy Optimization — the RL algorithm used in this book to train reasoning models.</dd>
+        </div>
+        <div class="term-card">
+          <dt>RLVR</dt>
+          <dd>Reinforcement Learning with Verifiable Rewards — RL using automated correctness checks as the reward signal.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Knowledge Distillation</dt>
+          <dd>Training a small student model on outputs generated by a large teacher model.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Decoder-Only Transformer</dt>
+          <dd>A transformer architecture that generates output autoregressively; the dominant design for modern LLMs.</dd>
+        </div>
+        <div class="term-card">
+          <dt>Qwen3</dt>
+          <dd>The open-weight LLM family (by Alibaba) used as the base model throughout this book.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <hr class="hr-section" />
+
+    <!-- ══════════════════════════════════════════
+         REVIEW QUESTIONS
+    ══════════════════════════════════════════ -->
+    <section class="section" id="review">
+      <h2 class="section-title">Review Questions</h2>
+
+      <div class="questions">
+        <ol>
+          <li>
+            <strong>Conceptual.</strong> Explain in your own words why a model that is only trained
+            to predict the next token can acquire knowledge of facts, code syntax, and logical
+            reasoning. What property of the training data makes this possible?
+          </li>
+          <li>
+            <strong>Mathematical.</strong> Given the cross-entropy loss formula:
+            \( \mathcal{L} = -\frac{1}{N} \sum_{i=1}^{N} \log P(t_i \mid t_1, \ldots, t_{i-1}) \),
+            explain what happens to the loss when (a) the model assigns 100% probability to the
+            correct token, and (b) the model assigns an equal probability of 1/V to all V tokens
+            in the vocabulary. Which situation produces the higher (worse) loss?
+          </li>
+          <li>
+            <strong>Reasoning.</strong> The bat-and-ball problem in Section 1.4 trips many LLMs.
+            Propose a more complex multi-step word problem that would require at least three algebraic
+            steps to solve correctly. Describe the chain-of-thought trace you would expect a
+            correct reasoning model to produce.
+          </li>
+          <li>
+            <strong>Architecture.</strong> What is the computational cost of attention as a function
+            of context length? If a model has a context window of 4,096 tokens and you extend it
+            to 32,768 tokens, by roughly what factor does the attention computation increase?
+          </li>
+          <li>
+            <strong>Comparison.</strong> Compare inference-time scaling and reinforcement learning
+            as approaches to improving reasoning. What are the key trade-offs between them in terms
+            of (a) computational cost, (b) whether the model's weights change, and (c) the types
+            of tasks each handles best?
+          </li>
+          <li>
+            <strong>Distillation.</strong> A researcher wants to create a small (1B-parameter)
+            reasoning model but has no access to a GPU cluster for RL training. Which technique
+            from Section 1.5 would you recommend, and why? What are the limitations of this
+            approach?
+          </li>
+          <li>
+            <strong>Python/Java.</strong> Translate the following Python function into equivalent
+            Java code, then back into Python — but this time using a list comprehension where
+            possible.
+            <div class="code-container" style="margin-top:0.6rem;">
+              <div class="code-header">
+                <span>Translate this function</span>
+                <span class="lang-badge python">Python</span>
+              </div>
+              <pre>def softmax(logits: list[float]) -> list[float]:
+    import math
+    max_val = max(logits)
+    exps = [math.exp(x - max_val) for x in logits]
+    total = sum(exps)
+    return [e / total for e in exps]</pre>
+            </div>
+          </li>
+          <li>
+            <strong>Critical thinking.</strong> Why might a reasoning model that generates very
+            long thinking traces not always outperform one that generates shorter traces? Consider
+            the role of the context window in your answer.
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         FOOTER
+    ══════════════════════════════════════════ -->
+    <footer>
+      <p>
+        <em>Build a Reasoning Model (From Scratch)</em> — Sebastian Raschka. Manning Publications, 2025.
+        ISBN: 9781633434677.
+      </p>
+      <p class="mt-sm">Chapter 1 · No code this chapter · Next: <a href="../ch02/" style="color:var(--accent);">Chapter 2 — Generating Text with a Pre-trained LLM →</a></p>
+    </footer>
+
+  </main>
+</div><!-- /.page-wrap -->
+
+</body>
+</html>
